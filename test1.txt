@@ -1,0 +1,13 @@
+   private static String nonNullRowData(Map<String, Object> payload) {
+        StringBuilder sb = new StringBuilder("{");
+        for (Map.Entry<String, Object> e : payload.entrySet()) {
+            if (e.getValue() == null) {
+                continue;
+            }
+            if (sb.length() > 1) {
+                sb.append(", ");
+            }
+            sb.append(e.getKey()).append('=').append(e.getValue());
+        }
+        return sb.append('}').toString();
+    }
