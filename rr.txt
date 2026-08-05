@@ -1,0 +1,19 @@
+private String writeRowDataJson(Map<String, Object> payload) {
+        if (payload == null) {
+            return null;
+        }
+        Map<String, Object> nonNull = new LinkedHashMap<>();
+        payload.forEach((key, value) -> {
+            if (value != null) {
+                nonNull.put(key, value);
+            }
+        });
+        if (nonNull.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(nonNull);
+        } catch (Exception e) {
+            return String.valueOf(nonNull);
+        }
+    }
