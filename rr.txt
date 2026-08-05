@@ -1,19 +1,23 @@
-private String writeRowDataJson(Map<String, Object> payload) {
-        if (payload == null) {
-            return null;
-        }
-        Map<String, Object> nonNull = new LinkedHashMap<>();
-        payload.forEach((key, value) -> {
-            if (value != null) {
-                nonNull.put(key, value);
-            }
-        });
-        if (nonNull.isEmpty()) {
-            return null;
-        }
-        try {
-            return objectMapper.writeValueAsString(nonNull);
-        } catch (Exception e) {
-            return String.valueOf(nonNull);
-        }
-    }
+                                                                                                                                                                                                       
+  SELECT table_name,                                                                                                                                                                                   
+         MAX(CASE WHEN column_name = 'IS_CURRENT'         THEN 'Y' END) AS has_is_current,                                                                                                             
+         MAX(CASE WHEN column_name = 'MEMBER_SHORT_NAME'  THEN 'Y' END) AS has_member,                                                                                                                 
+         MAX(CASE WHEN column_name = 'VALID_FROM_TSTAMP'  THEN 'Y' END) AS has_vfrom,                                                                                                                  
+         MAX(CASE WHEN column_name = 'VALID_TO_TSTAMP'    THEN 'Y' END) AS has_vto,                                                                                                                    
+         MAX(CASE WHEN column_name IN ('CF_REPORT_DATE','REPORT_DATE','FVP_REPORT_DATE')                                                                                                               
+                  THEN column_name END)                                 AS date_col                                                                                                                    
+  FROM all_tab_columns                                                                                                                                                                                 
+  WHERE table_name IN (
+
+
+
+
+
+
+
+  SELECT t.table_name
+  FROM (SELECT DISTINCT table_name FROM all_tab_columns
+        WHERE column_name IN ('VALID_FROM_TSTAMP','VALID_TO_TSTAMP')) t
+  WHERE NOT EXISTS (
+      SELECT 1 FROM all_tab_columns c
+      WHERE c.table_name = t.table_name AND c.column_name = 'IS_CURRENT');
