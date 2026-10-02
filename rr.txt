@@ -1,1 +1,9 @@
-123
+  1. The formule wasn't staying frozen. On the policy change the offering was being reset to the base (Économique) instead of keeping the contract's in-force formule. I changed                       
+  initializingOfferingIfNotDone to restore the in-force offering (BasedOn) when it's a policy change, so the formule stays figée. Already tested in PE — that error is gone.                           
+                                                                                                                                                                                                       
+  2. The bonus/malus values trip the concurrence check. NombreAnneeBonus / ReductionSpeciale / ReductionSpecialeMacif are recomputed on purpose by computeRegularisationBonusMalus (e.g. réduction     
+  forced to 1 in malus — that's why car at coeff 100 only showed NombreAnneeBonus and the moto in malus showed réduction). The check already ignores the other fields that same method writes          
+  (IndicateurRecalcul, CodeOrigine, DateChangementBonus) — it just didn't ignore these. So I added them to the same ignore list.                                                                       
+                                                                                                                                                                                                       
+  Question: OK to treat these three BM fields as legitimate regularisation outputs and exclude them from the NBJ concurrence check (completing the existing list), while the formule stays frozen? This
+  matches your point that the recalculation should run — only blocking it causes the defect.                                  
