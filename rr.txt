@@ -1,9 +1,301 @@
-  1. The formule wasn't staying frozen. On the policy change the offering was being reset to the base (Économique) instead of keeping the contract's in-force formule. I changed                       
-  initializingOfferingIfNotDone to restore the in-force offering (BasedOn) when it's a policy change, so the formule stays figée. Already tested in PE — that error is gone.                           
-                                                                                                                                                                                                       
-  2. The bonus/malus values trip the concurrence check. NombreAnneeBonus / ReductionSpeciale / ReductionSpecialeMacif are recomputed on purpose by computeRegularisationBonusMalus (e.g. réduction     
-  forced to 1 in malus — that's why car at coeff 100 only showed NombreAnneeBonus and the moto in malus showed réduction). The check already ignores the other fields that same method writes          
-  (IndicateurRecalcul, CodeOrigine, DateChangementBonus) — it just didn't ignore these. So I added them to the same ignore list.                                                                       
-                                                                                                                                                                                                       
-  Question: OK to treat these three BM fields as legitimate regularisation outputs and exclude them from the NBJ concurrence check (completing the existing list), while the formule stays frozen? This
-  matches your point that the recalculation should run — only blocking it causes the defect.                                  
+<div class="progress-row">
+    <div class="v6-card-list v6-card-list__last-item-right-aligned">
+        <div class="v6-card-list__header">
+            <div class="v6-card-list__header--item first-col-width">Job</div>
+            <div class="v6-card-list__header--item id-col-min-width">
+                Job Execution ID
+            </div>
+            <div class="v6-card-list__header--item col-min-width">Submit Time</div>
+            <div class="v6-card-list__header--item col-min-width">Start Time</div>
+            <div class="v6-card-list__header--item col-min-width">
+                Completion Time
+            </div>
+            <div class="v6-card-list__header--item">User ID</div>
+            <div class="v6-card-list__header--item">Status</div>
+            <div class="v6-card-list__header--item exception-col-min-width">
+                Exceptions
+            </div>
+            <div class="v6-card-list__header--item"></div>
+            <div class="v6-card-list__header--item"></div>
+            <div class="v6-card-list__header--item"></div>
+        </div>
+    </div>
+    <ng-container *ngFor="let group of _jobTranslationModelWithGroup | keyvalue">
+        <div
+            id="chardListDoubleCard"
+            class="v6-card-list__card {{
+                getDoubleCardClass(group.value)
+            }}">
+            <div
+                id="titleCard"
+                class="v6-card-list__card--item font-weight-500 double-card-item first-col-width">
+                <ng-container
+                    *ngFor="
+                        let job of group.value | keyvalue
+                    ">
+                    <div class="upper-element">{{ getJobName(job.key) }}</div>
+                </ng-container>
+            </div>
+
+            <div class="v6-card-list__card--item double-card-item id-col-min-width">
+                <ng-container
+                    *ngFor="
+                        let job of group.value | keyvalue
+                    ">
+                    <div class="badge-double upper-element">
+                        {{ getJobExecutionId(job.key) || DEFAULT_VALUE }}
+                    </div>
+                </ng-container>
+            </div>
+
+            <div class="v6-card-list__card--item double-card-item col-min-width">
+                <ng-container
+                    *ngFor="
+                        let job of group.value | keyvalue
+                    ">
+                    <div class="badge-double upper-element">
+                        {{
+                            timestampToLocalFormatter(
+                                batchJobs.get(job.key).submittedTime
+                            ) || DEFAULT_VALUE
+                        }}
+                    </div>
+                </ng-container>
+            </div>
+
+            <div class="v6-card-list__card--item double-card-item col-min-width">
+                <ng-container
+                    *ngFor="
+                        let job of group.value | keyvalue
+                    ">
+                    <div class="badge-double upper-element">
+                        {{
+                            timestampToLocalFormatter(batchJobs.get(job.key).startTime) ||
+                                DEFAULT_VALUE
+                        }}
+                    </div>
+                </ng-container>
+            </div>
+
+            <div class="v6-card-list__card--item double-card-item col-min-width">
+                <ng-container
+                    *ngFor="
+                        let job of group.value | keyvalue
+                    ">
+                    <div class="badge-double upper-element">
+                        {{
+                            timestampToLocalFormatter(
+                                batchJobs.get(job.key).completionTime
+                            ) || DEFAULT_VALUE
+                        }}
+                    </div>
+                </ng-container>
+            </div>
+
+            <div class="v6-card-list__card--item double-card-item col-min-width">
+                <ng-container
+                    *ngFor="
+                        let job of group.value | keyvalue
+                    ">
+                    <div class="badge-double upper-element">
+                        {{ batchJobs.get(job.key).createdUserId || DEFAULT_VALUE }}
+                    </div>
+                </ng-container>
+            </div>
+
+            <div class="v6-card-list__card--item double-card-item">
+                <ng-container
+                    *ngFor="
+                        let job of group.value | keyvalue
+                    ">
+                    <div class="badge-double upper-element">
+                        <span
+                            class="badge badge-medium upper-element badge-double {{
+                                getBadgeClass(job.key)
+                            }}"
+                            >{{ batchJobs.get(job.key).status || DEFAULT_VALUE }}</span>
+                    </div>
+                </ng-container>
+            </div>
+
+            <div
+                class="v6-card-list__card--item double-card-item exception-col-min-width">
+                <ng-container
+                    *ngFor="
+                        let job of group.value | keyvalue
+                    ">
+                    <div class="badge-double upper-element">
+                        <batch-job-exception
+                            *ngIf="areExceptionsAvailable(job.key)"
+                            [dataException]="hasDEOccurred(job.key)"
+                            [metadataRefreshException]="hasMROccurred(job.key)">
+                        </batch-job-exception>
+                        <div
+                            *ngIf="!areExceptionsAvailable(job.key)"
+                            class="badge-double upper-element">
+                            {{ DEFAULT_VALUE }}
+                        </div>
+                    </div>
+                </ng-container>
+            </div>
+
+            <div class="v6-card-list__card--item action-col">
+                <button
+                    *ngIf="batchData.serviceType === 'DMR' || batchData.serviceType === 'POI'"
+                    class="btn btn-primary btn-medium"
+                    type="button"
+                    [disabled]="
+                        !isExportEnabled(group.value)
+                    "
+                    (click)="onExport()">
+                    Export
+                </button>
+            </div>
+            <div class="v6-card-list__card--item"></div>
+            <div class="v6-card-list__card--item action-col">
+                <button
+                    *ngIf="isGroupRerunVisible(group.value)"
+                    class="btn btn-primary btn-medium"
+                    type="button"
+                    [disabled]="
+                        !isRunButtonDisabled(group.value) ||
+                        processStatus === 'APPROVED'
+                    "
+                    (click)="onRerunBatch()">
+                    Rerun
+                </button>
+            </div>
+        </div>
+    </ng-container>
+
+    <ng-container *ngFor="let jobType of STANDARD_ROW_JOB_TYPES">
+        <div class="v6-card-list__card {{ getCardClass(jobType) }}">
+            <div class="v6-card-list__card--item font-weight-500 first-col-width">
+                {{ getJobName(jobType) }}
+            </div>
+            <div class="v6-card-list__card--item id-col-min-width">
+                {{ getJobExecutionId(jobType) }}
+            </div>
+            <div class="v6-card-list__card--item col-min-width">
+                {{ timestampToLocalFormatter(batchJobs.get(jobType).submittedTime) }}
+            </div>
+            <div class="v6-card-list__card--item col-min-width">
+                {{ timestampToLocalFormatter(batchJobs.get(jobType).startTime) }}
+            </div>
+            <div class="v6-card-list__card--item col-min-width">
+                {{ timestampToLocalFormatter(batchJobs.get(jobType).completionTime) }}
+            </div>
+            <div class="v6-card-list__card--item">
+                {{ batchJobs.get(jobType).createdUserId }}
+            </div>
+            <div class="v6-card-list__card--item">
+                <span class="badge badge-medium {{ getBadgeClass(jobType) }}">
+                    {{ batchJobs.get(jobType).status }}
+                </span>
+            </div>
+            <div class="v6-card-list__card--item exception-col-min-width">
+                <batch-job-exception
+                    *ngIf="areExceptionsAvailable(jobType)"
+                    [jobStatus]="batchJobs.get(jobType).status"
+                    [dataException]="hasDEOccurred(jobType)"
+                    [metadataRefreshException]="hasMROccurred(jobType)">
+                </batch-job-exception>
+            </div>
+            <div class="v6-card-list__card--item"></div>
+            <div class="v6-card-list__card--item"></div>
+            <div class="v6-card-list__card--item action-col">
+                <button
+                    class="btn btn-primary btn-medium"
+                    type="button"
+                    [disabled]="
+                        hasRunningGroup() ||
+                        checkRunButtonDisabled(jobType) ||
+                        processStatus === 'APPROVED'
+                    "
+                    (click)="onRunBatchJob(jobType)">
+                    {{ isRerunButtonVisible(jobType) ? 'Rerun' : 'Run' }}
+                </button>
+            </div>
+        </div>
+    </ng-container>
+
+    <div *ngIf="batchJobs.get(DATA_QUALITY_RULE_ID)">
+        <div class="v6-card-list__card {{ getCardClass(DATA_QUALITY_RULE_ID) }}">
+            <div class="v6-card-list__card--item font-weight-500 first-col-width">
+                {{ getJobName(DATA_QUALITY_RULE_ID) }}
+            </div>
+            <div class="v6-card-list__card--item id-col-min-width">
+                {{ getJobExecutionId(DATA_QUALITY_RULE_ID) }}
+            </div>
+            <div class="v6-card-list__card--item col-min-width">
+                {{
+                    timestampToLocalFormatter(
+                        batchJobs.get(DATA_QUALITY_RULE_ID).submittedTime
+                    )
+                }}
+            </div>
+            <div class="v6-card-list__card--item col-min-width">
+                {{
+                    timestampToLocalFormatter(
+                        batchJobs.get(DATA_QUALITY_RULE_ID).startTime
+                    )
+                }}
+            </div>
+            <div class="v6-card-list__card--item col-min-width">
+                {{
+                    timestampToLocalFormatter(
+                        batchJobs.get(DATA_QUALITY_RULE_ID).completionTime
+                    )
+                }}
+            </div>
+            <div class="v6-card-list__card--item">
+                {{ batchJobs.get(DATA_QUALITY_RULE_ID).createdUserId }}
+            </div>
+            <div class="v6-card-list__card--item">
+                <span
+                    class="badge badge-medium {{ getBadgeClass(DATA_QUALITY_RULE_ID) }}">
+                    {{ batchJobs.get(DATA_QUALITY_RULE_ID).status }}
+                </span>
+            </div>
+            <div class="v6-card-list__card--item exception-col-min-width">
+                <batch-job-exception
+                    *ngIf="areExceptionsAvailable(DATA_QUALITY_RULE_ID)"
+                    [jobStatus]="batchJobs.get(DATA_QUALITY_RULE_ID).status"
+                    [dataException]="hasDEOccurred(DATA_QUALITY_RULE_ID)"
+                    [metadataRefreshException]="hasMROccurred(DATA_QUALITY_RULE_ID)">
+                </batch-job-exception>
+            </div>
+            <div class="v6-card-list__card--item action-col">
+                <button
+                    class="btn btn-primary btn-medium"
+                    type="button"
+                    [disabled]="isSummaryAndReportDisabled()"
+                    (click)="onDQSummary()">
+                    Summary
+                </button>
+            </div>
+            <div class="v6-card-list__card--item action-col">
+                <button
+                    class="btn btn-primary btn-medium"
+                    type="button"
+                    [disabled]="isSummaryAndReportDisabled()"
+                    (click)="onDQReport()">
+                    Report
+                </button>
+            </div>
+            <div class="v6-card-list__card--item action-col">
+                <button
+                    class="btn btn-primary btn-medium"
+                    type="button"
+                    [disabled]="
+                        hasRunningGroup() ||
+                        checkRunButtonDisabled(DATA_QUALITY_RULE_ID) ||
+                        processStatus === 'APPROVED'
+                    "
+                    (click)="onRunBatchJob(DATA_QUALITY_RULE_ID)">
+                    {{ isRerunButtonVisible(DATA_QUALITY_RULE_ID) ? 'Rerun' : 'Run' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
